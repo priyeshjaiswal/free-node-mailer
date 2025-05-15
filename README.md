@@ -65,14 +65,13 @@ Sends an email using the configured SMTP service (Brevo by default).
 ```
 Content-Type: application/json
 ```
-
 ### Body Parameters (JSON)
 
 | Field     | Type     | Required | Description                                                                 |
 |-----------|----------|----------|-----------------------------------------------------------------------------|
-| `to`      | string   | ✅       | Recipient email address.                                                   |
-| `subject` | string   | ✅       | Subject line for the email.                                                |
-| `html`    | string   | ✅       | HTML content of the email.                                                 |
+| `to`      | string   | ✅       | Recipient email address.                                                     |
+| `subject` | string   | ✅       | Subject line for the email.                                                  |
+| `html`    | string   | ✅       | HTML content of the email.                                                   |
 | `sender`  | object   | ❌       | *(Optional)* Custom sender override (e.g., Gmail). Includes `name`, `email`. |
 
 ### Example Request Body
@@ -87,6 +86,7 @@ Content-Type: application/json
     "email": "no-reply@arctano.com"
   }
 }
+```
 
 #### 📝 Required Fields:
 - `to` – Recipient's email address
