@@ -78,12 +78,12 @@ Content-Type: application/json
 
 ```json
 {
-  "to": "jaiswal.priyesh872@gmail.com",
+  "to": "youremail@gmail.com",
   "subject": "Your OTP Code",
-  "html": "<p>Your One-Time Password is: <strong>385291</strong>. It is valid for 5 minutes.</p>",
+  "html": "<p>Your One-Time Password is: <strong>000000</strong>. It is valid for 5 minutes.</p>",
   "sender": {
-    "name": "Arctano OTP Service",
-    "email": "no-reply@arctano.com"
+    "name": "OTP Service",
+    "email": "no-reply@yourcompany.com"
   }
 }
 ```
