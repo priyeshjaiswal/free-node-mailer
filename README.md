@@ -1,60 +1,172 @@
-# 📬 Free Node.js Mailer API
+# 📬 Free Node Mailer API
 
-A simple, reusable Node.js mailer API that:
-
-- Sends transactional emails (e.g., OTPs) using Brevo (Sendinblue) SMTP (free up to 300 emails/day)
-- Automatically falls back to a secondary SMTP (like Gmail) when Brevo's daily limit is reached
-- Tracks daily sent email count and resets every day
-- Supports customizable sender email per request
-- Configured via environment variables for easy setup and deployment
+A lightweight and production-ready Node.js-based email-sending API using SMTP (primarily Brevo / Sendinblue). Perfect for transactional emails in web and mobile apps.
 
 ---
 
 ## 🚀 Features
 
-- Free tier transactional email support with Brevo (Sendinblue)
-- Daily limit enforcement and fallback mechanism
-- Easy API endpoint for sending emails
-- Customizable sender address per email request
-- Simple JSON-based API
+- Send emails via a REST API (`/api/send`)
+- Uses Brevo (Sendinblue) SMTP by default
+- Supports fallback SMTP provider
+- Easy setup with `.env` configuration
+- Well-documented and ready to deploy
 
 ---
 
-## 📦 Installation
+## 📦 Installation & Setup
 
-1. Clone the repository:
+### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/free-node-mailer.git
+git clone git@github.com:priyeshjaiswal/free-node-mailer.git
 cd free-node-mailer
 ```
 
-## 📧 How to Register & Setup Brevo (Sendinblue) SMTP for This Mailer
+### 2. Install Dependencies
+
+```bash
+npm install
+```
+
+### 3. Setup Environment Variables
+
+Create a `.env` file in the root directory using the `.env.example` as reference:
+
+```bash
+cp .env.example .env
+```
+
+Update the values in `.env` with your Brevo SMTP credentials (see below).
+
+### 4. Run the Project
+
+```bash
+npm start
+```
+
+The server will start on `http://localhost:3000`.
+
+---
+
+## 📘 API Usage
+
+Once your server is running (`npm start`), your mailer API will be accessible via:
+
+```
+http://localhost:3000/api/send-mail
+```
+
+### ➤ POST `/api/send-mail`
+
+Sends an email using the configured SMTP service (Brevo by default).
+
+#### ✅ Request Headers:
+```
+Content-Type: application/json
+```
+
+### Body Parameters (JSON)
+
+| Field     | Type     | Required | Description                                                                 |
+|-----------|----------|----------|-----------------------------------------------------------------------------|
+| `to`      | string   | ✅       | Recipient email address.                                                   |
+| `subject` | string   | ✅       | Subject line for the email.                                                |
+| `html`    | string   | ✅       | HTML content of the email.                                                 |
+| `sender`  | object   | ❌       | *(Optional)* Custom sender override (e.g., Gmail). Includes `name`, `email`. |
+
+### Example Request Body
+
+```json
+{
+  "to": "jaiswal.priyesh872@gmail.com",
+  "subject": "Your OTP Code",
+  "html": "<p>Your One-Time Password is: <strong>385291</strong>. It is valid for 5 minutes.</p>",
+  "sender": {
+    "name": "Arctano OTP Service",
+    "email": "no-reply@arctano.com"
+  }
+}
+
+#### 📝 Required Fields:
+- `to` – Recipient's email address
+- `subject` – Email subject line
+- `text` OR `html` – Email body (you can send both)
+
+#### 📥 Response Example:
+
+- **Success (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Email sent successfully"
+}
+```
+
+- **Error (400 or 500)**:
+```json
+{
+  "success": false,
+  "error": "Invalid email format" // or detailed error message
+}
+```
+
+---
+
+## 🔐 How to Register & Setup Brevo (Sendinblue) SMTP for This Mailer
 
 ### Step 1: Create a Brevo Account
 
-- Visit [https://www.brevo.com/](https://www.brevo.com/) (formerly Sendinblue).
+- Visit [https://www.brevo.com/](https://www.brevo.com/)
 - Click **Sign Up** and register with your email address.
-- Confirm your email by clicking the verification link sent to your inbox.
+- Confirm your email by clicking the verification link.
 
 ### Step 2: Access SMTP Settings
 
-- Log in to your Brevo dashboard.
-- Navigate to **SMTP & API** from the left sidebar.
-- Under the **SMTP** tab, you will find the SMTP server details:
-  - **SMTP Server:** `smtp-relay.brevo.com`
-  - **Port:** Usually `587` (STARTTLS) or `465` (SSL)
-- Create or copy your SMTP credentials (username and password). These will be used in your `.env` file.
+- Log in to the Brevo dashboard.
+- Go to **SMTP & API** → **SMTP**
+- Use the following SMTP server:
+
+```
+SMTP Server: smtp-relay.brevo.com
+Port: 587 (STARTTLS) or 465 (SSL)
+```
+
+- Generate or copy your SMTP credentials (username/password)
 
 ### Step 3: Verify Your Sender Email or Domain
 
-- In the dashboard, go to **Settings → Senders & Domains**.
-- Add your sender email (e.g., `no-reply@yourdomain.com`) or your entire domain.
-- You will receive a verification email—click the verification link to activate the sender.
-- (Recommended) Add SPF, DKIM, and DMARC DNS records to your domain to improve deliverability and reduce spam chances. Brevo provides the exact DNS records required.
+- Go to **Settings → Senders & Domains**
+- Add and verify your sender email or domain.
+- Brevo will send a verification email.
 
-### Step 4: Check Your Sending Limits
+*(Optional but recommended)*: Add SPF, DKIM, and DMARC DNS records to your domain for better deliverability.
 
-- Free Brevo accounts allow sending up to **300 emails per day**.
-- You can monitor usage and limits in your Brevo dashboard under **Statistics**.
-- The mailer app respects these limits and automatically falls back to a secondary SMTP provider when the limit is reached.
+### Step 4: Check Sending Limits
+
+- Free accounts can send up to **300 emails/day**.
+- This app respects limits and can failover to secondary SMTP if configured.
+
+---
+
+## 📁 File Structure
+
+```
+.
+├── .env.example
+├── server.js
+├── package.json
+└── README.md
+```
+
+---
+
+## 👨‍💻 Contributing
+
+Feel free to fork the repo, make improvements, and open PRs!
+
+---
+
+## 📜 License
+
+MIT License
