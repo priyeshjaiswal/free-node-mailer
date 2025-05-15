@@ -54,10 +54,10 @@ The server will start on `http://localhost:3000`.
 Once your server is running (`npm start`), your mailer API will be accessible via:
 
 ```
-http://localhost:3000/api/send-mail
+http://localhost:3000/api/send
 ```
 
-### ➤ POST `/api/send-mail`
+### ➤ POST `/api/send`
 
 Sends an email using the configured SMTP service (Brevo by default).
 
