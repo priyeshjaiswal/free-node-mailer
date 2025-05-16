@@ -51,7 +51,7 @@ FALLBACK_PORT=465
 FALLBACK_USER=your_gmail_address
 FALLBACK_PASS=your_app_password
 
-FROM_EMAIL=no-reply@arctano.com
+FROM_EMAIL=no-reply@yourcompany.com
 DAILY_LIMIT=300
 ```
 
@@ -75,8 +75,8 @@ Sends an email using either:
   "subject": "Your OTP Code",
   "html": "<p>Your OTP is <strong>123456</strong>. Valid for 5 minutes.</p>",
   "sender": {
-    "name": "Arctano OTP Service",
-    "email": "no-reply@arctano.com"
+    "name": "OTP Service",
+    "email": "no-reply@yourcomapny.com"
   }
 }
 ```
@@ -122,7 +122,7 @@ curl -X POST http://localhost:5000/send \
 5. Brevo SMTP host: `smtp-relay.brevo.com`
 6. Port: `587`, Secure: `false`
 
-> ⚠️ You may need to verify your sending domain (`no-reply@arctano.com`) under **Settings > Senders > Domains**.
+> ⚠️ You may need to verify your sending domain (`no-reply@yourcompany.com`) under **Settings > Senders > Domains**.
 
 ---
 
