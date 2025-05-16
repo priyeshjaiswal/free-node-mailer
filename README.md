@@ -1,25 +1,27 @@
-# 📬 Free Node Mailer API
 
-A lightweight and production-ready Node.js-based email-sending API using SMTP (primarily Brevo / Sendinblue). Perfect for transactional emails in web and mobile apps.
+# 📩 Mailer Service
 
----
-
-## 🚀 Features
-
-- Send emails via a REST API (`/api/send`)
-- Uses Brevo (Sendinblue) SMTP by default
-- Supports fallback SMTP provider
-- Easy setup with `.env` configuration
-- Well-documented and ready to deploy
+A flexible Node.js email service using **Brevo (formerly Sendinblue)** and **fallback SMTP (e.g., Gmail)** with smart routing logic. Supports daily email tracking and dynamic provider control via API.
 
 ---
 
-## 📦 Installation & Setup
+## ✨ Features
 
-### 1. Clone the Repository
+- 📤 Send OTPs and transactional emails via Brevo or fallback email (like Gmail).
+- 📦 JSON-based API with sender-level override support.
+- 🔄 Daily email count tracked (extendable to limits, quotas, stats).
+- 🛠 Built-in fallback mechanism for reliability.
+- 🔒 Secure using `.env` and nodemailer.
+- 🧰 Ready to deploy anywhere: Railway, Render, Vercel Serverless, etc.
+
+---
+
+## 🚀 Getting Started
+
+### 1. Clone the Repo
 
 ```bash
-git clone git@github.com:priyeshjaiswal/free-node-mailer.git
+git clone https://github.com/priyeshjaiswal/free-node-mailer.git
 cd free-node-mailer
 ```
 
@@ -29,144 +31,101 @@ cd free-node-mailer
 npm install
 ```
 
-### 3. Setup Environment Variables
+### 3. Setup `.env`
 
-Create a `.env` file in the root directory using the `.env.example` as reference:
+Create a `.env` file at the root:
 
-```bash
-cp .env.example .env
+```env
+PORT=5000
+
+# BREVO credentials (https://www.brevo.com)
+BREVO_HOST=smtp-relay.brevo.com
+BREVO_PORT=587
+BREVO_SECURE=false
+BREVO_USER=your_brevo_login_email
+BREVO_PASS=your_brevo_smtp_key
+
+# Fallback (Gmail or other SMTP)
+FALLBACK_HOST=smtp.gmail.com
+FALLBACK_PORT=465
+FALLBACK_USER=your_gmail_address
+FALLBACK_PASS=your_app_password
+
+FROM_EMAIL=no-reply@arctano.com
+DAILY_LIMIT=300
 ```
-
-Update the values in `.env` with your Brevo SMTP credentials (see below).
-
-### 4. Run the Project
-
-```bash
-npm start
-```
-
-The server will start on `http://localhost:3000`.
 
 ---
 
-## 📘 API Usage
+## 📝 API Endpoint
 
-Once your server is running (`npm start`), your mailer API will be accessible via:
+### `POST /send`
 
-```
-http://localhost:3000/api/send
-```
+Sends an email using either:
+- `provider = "bravo"` → Brevo
+- `provider = "email"` → Fallback (like Gmail)
+- If `sender.email` is provided, it overrides everything.
 
-### ➤ POST `/api/send`
-
-Sends an email using the configured SMTP service (Brevo by default).
-
-#### ✅ Request Headers:
-```
-Content-Type: application/json
-```
-### Body Parameters (JSON)
-
-| Field     | Type     | Required | Description                                                                 |
-|-----------|----------|----------|-----------------------------------------------------------------------------|
-| `to`      | string   | ✅       | Recipient email address.                                                     |
-| `subject` | string   | ✅       | Subject line for the email.                                                  |
-| `html`    | string   | ✅       | HTML content of the email.                                                   |
-| `sender`  | object   | ❌       | *(Optional)* Custom sender override (e.g., Gmail). Includes `name`, `email`. |
-
-### Example Request Body
+#### 📌 JSON Body Format
 
 ```json
 {
-  "to": "youremail@gmail.com",
+  "provider": "bravo", // or "email"
+  "to": "user@example.com",
   "subject": "Your OTP Code",
-  "html": "<p>Your One-Time Password is: <strong>000000</strong>. It is valid for 5 minutes.</p>",
+  "html": "<p>Your OTP is <strong>123456</strong>. Valid for 5 minutes.</p>",
   "sender": {
-    "name": "OTP Service",
-    "email": "no-reply@yourcompany.com"
+    "name": "Arctano OTP Service",
+    "email": "no-reply@arctano.com"
   }
 }
 ```
 
-#### 📝 Required Fields:
-- `to` – Recipient's email address
-- `subject` – Email subject line
-- `text` OR `html` – Email body (you can send both)
+#### 🧠 Logic Explained
 
-#### 📥 Response Example:
+| Rule                         | Behavior                          |
+|-----------------------------|-----------------------------------|
+| `sender.email` exists       | Always use Brevo                  |
+| `provider === "bravo"`      | Use Brevo                         |
+| `provider === "email"`      | Use Fallback                      |
+| None/Unknown provider       | Returns error                     |
 
-- **Success (200 OK)**:
-```json
-{
-  "success": true,
-  "message": "Email sent successfully"
-}
-```
+---
 
-- **Error (400 or 500)**:
-```json
-{
-  "success": false,
-  "error": "Invalid email format" // or detailed error message
-}
+## ✅ Sample CURL Usage
+
+```bash
+curl -X POST http://localhost:5000/send \
+  -H "Content-Type: application/json" \
+  -d '{
+    "provider": "bravo",
+    "to": "receiveremail@gmail.com",
+    "subject": "OTP Code",
+    "html": "<p>Your OTP is <strong>000000</strong>.</p>",
+    "sender": {
+      "name": "OTP",
+      "email": "no-reply@yourcomapny.com"
+    }
+  }'
 ```
 
 ---
 
-## 🔐 How to Register & Setup Brevo (Sendinblue) SMTP for This Mailer
+## 🧾 Register on Brevo (Sendinblue)
 
-### Step 1: Create a Brevo Account
+1. Go to [https://www.brevo.com](https://www.brevo.com) and sign up.
+2. Verify your account using business email and domain.
+3. Go to **SMTP & API → SMTP** section:
+   - Click on "Create SMTP Key".
+   - Copy the key and use it in your `.env` as `BREVO_PASS`.
+4. Set `BREVO_USER` as your Brevo login email.
+5. Brevo SMTP host: `smtp-relay.brevo.com`
+6. Port: `587`, Secure: `false`
 
-- Visit [https://www.brevo.com/](https://www.brevo.com/)
-- Click **Sign Up** and register with your email address.
-- Confirm your email by clicking the verification link.
-
-### Step 2: Access SMTP Settings
-
-- Log in to the Brevo dashboard.
-- Go to **SMTP & API** → **SMTP**
-- Use the following SMTP server:
-
-```
-SMTP Server: smtp-relay.brevo.com
-Port: 587 (STARTTLS) or 465 (SSL)
-```
-
-- Generate or copy your SMTP credentials (username/password)
-
-### Step 3: Verify Your Sender Email or Domain
-
-- Go to **Settings → Senders & Domains**
-- Add and verify your sender email or domain.
-- Brevo will send a verification email.
-
-*(Optional but recommended)*: Add SPF, DKIM, and DMARC DNS records to your domain for better deliverability.
-
-### Step 4: Check Sending Limits
-
-- Free accounts can send up to **300 emails/day**.
-- This app respects limits and can failover to secondary SMTP if configured.
+> ⚠️ You may need to verify your sending domain (`no-reply@arctano.com`) under **Settings > Senders > Domains**.
 
 ---
 
-## 📁 File Structure
+## 🔄 Daily Counter
 
-```
-.
-├── .env.example
-├── server.js
-├── package.json
-└── README.md
-```
-
----
-
-## 👨‍💻 Contributing
-
-Feel free to fork the repo, make improvements, and open PRs!
-
----
-
-## 📜 License
-
-MIT License
+The service maintains a file `email_count.json` to reset and track how many emails are sent per day (can be extended to DB or metrics dashboards).
