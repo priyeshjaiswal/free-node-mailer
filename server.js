@@ -1,4 +1,3 @@
-// server.js
 require("dotenv").config();
 const express = require("express");
 const nodemailer = require("nodemailer");
@@ -8,36 +7,41 @@ const app = express();
 app.use(express.json());
 
 const PORT = process.env.PORT || 5000;
-const EMAIL_LIMIT = parseInt(process.env.DAILY_LIMIT || "300", 10);
 const COUNTER_FILE = "email_count.json";
 
-// Initialize or reset counter daily
+// Daily counter (in case you want logs/stats)
 function initializeCounter() {
-  const today = new Date().toISOString().slice(0, 10);
-  if (!fs.existsSync(COUNTER_FILE)) {
-    fs.writeFileSync(COUNTER_FILE, JSON.stringify({ date: today, count: 0 }));
-  } else {
-    const { date } = JSON.parse(fs.readFileSync(COUNTER_FILE));
-    if (date !== today) {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    if (!fs.existsSync(COUNTER_FILE)) {
       fs.writeFileSync(COUNTER_FILE, JSON.stringify({ date: today, count: 0 }));
+    } else {
+      const data = JSON.parse(fs.readFileSync(COUNTER_FILE));
+      if (data.date !== today) {
+        fs.writeFileSync(
+          COUNTER_FILE,
+          JSON.stringify({ date: today, count: 0 })
+        );
+      }
     }
+  } catch (error) {
+    console.error("❌ Error initializing counter:", error.message);
+    throw new Error("Failed to initialize email counter");
   }
 }
 
-// Load counter
-function getTodayCount() {
-  const { count } = JSON.parse(fs.readFileSync(COUNTER_FILE));
-  return count;
-}
-
-// Increment and save
 function incrementCounter() {
-  const data = JSON.parse(fs.readFileSync(COUNTER_FILE));
-  data.count++;
-  fs.writeFileSync(COUNTER_FILE, JSON.stringify(data));
+  try {
+    const data = JSON.parse(fs.readFileSync(COUNTER_FILE));
+    data.count++;
+    fs.writeFileSync(COUNTER_FILE, JSON.stringify(data));
+  } catch (error) {
+    console.error("❌ Error incrementing counter:", error.message);
+    throw new Error("Failed to increment email counter");
+  }
 }
 
-// Create Brevo transporter
+// Setup Brevo transporter
 const brevoTransporter = nodemailer.createTransport({
   host: process.env.BREVO_HOST,
   port: parseInt(process.env.BREVO_PORT),
@@ -48,11 +52,11 @@ const brevoTransporter = nodemailer.createTransport({
   },
 });
 
-// Optional: fallback transporter
+// Setup fallback email transporter (e.g., Gmail)
 const fallbackTransporter = nodemailer.createTransport({
   host: process.env.FALLBACK_HOST,
   port: parseInt(process.env.FALLBACK_PORT),
-  secure: true, // usually for Gmail (465)
+  secure: true,
   auth: {
     user: process.env.FALLBACK_USER,
     pass: process.env.FALLBACK_PASS,
@@ -60,18 +64,41 @@ const fallbackTransporter = nodemailer.createTransport({
   connectionTimeout: 10000,
 });
 
-// Send Mail Handler
+// Mail endpoint
 app.post("/send", async (req, res) => {
   try {
+    // Validate required fields
+    const { provider = "", to, subject, html, sender } = req.body;
+
+    if (!to || !subject || !html) {
+      return res.status(400).send({
+        success: false,
+        message: "Missing required fields: to, subject, and html are required",
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(to)) {
+      return res.status(400).send({
+        success: false,
+        message: "Invalid email format",
+      });
+    }
+
     initializeCounter();
 
-    const count = getTodayCount();
-    const { to, subject, html, sender } = req.body;
-
-    // Construct sender email (custom or default)
+    const lowerProvider = provider.toLowerCase();
     const from = sender?.email
-      ? `"${sender.name || "Mailer"}" <${sender.email}>`
+      ? `"${sender.name || "Custom Sender"}" <${sender.email}>`
       : process.env.FROM_EMAIL;
+
+    if (!from) {
+      return res.status(400).send({
+        success: false,
+        message: "No sender email configured",
+      });
+    }
 
     const mailOptions = {
       from,
@@ -80,34 +107,47 @@ app.post("/send", async (req, res) => {
       html,
     };
 
-    if (count >= EMAIL_LIMIT) {
-      console.log("🛑 Brevo limit reached, using fallback...");
-      fallbackTransporter.sendMail(mailOptions, (err, info) => {
-        if (err) {
-          console.error("❌ Fallback failed:", err.message);
-          return res
-            .status(500)
-            .send({ success: false, message: "All mailers failed." });
-        }
-        console.log("📤 Sent via fallback:", info.response);
-        return res.status(200).send({ success: true, fallback: true });
-      });
-    } else {
+    if (sender?.email) {
+      // Use sender email override — default to Brevo transport
       await brevoTransporter.sendMail(mailOptions);
       incrementCounter();
-      console.log(
-        `✅ Email sent via Brevo. Used today: ${count + 1}/${EMAIL_LIMIT}`
-      );
-      return res.status(200).send({ success: true, brevo: true });
+      console.log("📤 Sent using sender's email via Brevo.");
+      return res.status(200).send({ success: true, used: "sender.email" });
     }
-  } catch (error) {
-    console.error("❌ Send error:", error);
-    res.status(500).send({ success: false, error: error.message });
+
+    if (lowerProvider === "bravo") {
+      await brevoTransporter.sendMail(mailOptions);
+      incrementCounter();
+      console.log("📤 Email sent via Brevo.");
+      return res.status(200).send({ success: true, used: "bravo" });
+    }
+
+    if (lowerProvider === "email") {
+      await fallbackTransporter.sendMail(mailOptions);
+      console.log("📤 Email sent via fallback.");
+      return res.status(200).send({ success: true, used: "fallback" });
+    }
+
+    return res.status(400).send({
+      success: false,
+      message: `Invalid provider: ${provider}. Use "bravo" or "email", or provide sender.email.`,
+    });
+  } catch (err) {
+    console.error("❌ Send error:", err.message);
+    return res.status(500).send({
+      success: false,
+      error: err.message,
+      details: process.env.NODE_ENV === "development" ? err.stack : undefined,
+    });
   }
 });
 
-// Start the server after initializing the counter
-initializeCounter();
-app.listen(PORT, () => {
-  console.log(`📨 Mailer API running on http://localhost:${PORT}`);
-});
+try {
+  initializeCounter();
+  app.listen(PORT, () => {
+    console.log(`📨 Mailer API running at http://localhost:${PORT}`);
+  });
+} catch (error) {
+  console.error("❌ Failed to start server:", error.message);
+  process.exit(1);
+}
